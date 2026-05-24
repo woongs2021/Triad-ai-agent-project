@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Pretendard", "Pretendard Variable", "Samsung Sharp Sans", system-ui, sans-serif;
+  --color-canvas: #FCFCFF;
+  --color-canvas-dark: #010102;
+  --color-ink: #010102;
+  --color-cool-primary: #4065F8;
+  --color-warm-primary: #B85C4F;
+  --color-ai-accent: #9747FF;
+}
+
+:root {
+  color: #010102;
+  background: #010102;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #010102;
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.bg-gradient-polar-beige {
+  background: linear-gradient(-45deg, #A1D0F6 0%, #EEDCD6 100%);
+}
+
+.bg-gradient-ice-azure {
+  background: linear-gradient(-45deg, #CAF7FF 0%, #4065F8 100%);
+}
+
+.bg-gradient-violet-azure {
+  background: linear-gradient(-45deg, #9747FF 0%, #4065F8 100%);
+}
+
+.bg-gradient-azure-night {
+  background: linear-gradient(-45deg, #4065F8 0%, #001C33 100%);
+}
+
+.bg-gradient-rose-terracotta {
+  background: linear-gradient(-45deg, #C8847D 0%, #B85C4F 100%);
+}
+
+.bg-gradient-terracotta-abyssal {
+  background: linear-gradient(-45deg, #B85C4F 0%, #771B0E 100%);
+}
+
+.bg-gradient-polar-rose {
+  background: linear-gradient(-45deg, #A1D0F6 0%, #C8847D 100%);
+}
+
+.bg-gradient-violet-auburn {
+  background: linear-gradient(-45deg, #9747FF 0%, #8C3124 100%);
+}
+
+.scrollbar-hidden {
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}

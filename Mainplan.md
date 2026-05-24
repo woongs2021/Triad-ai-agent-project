@@ -139,10 +139,12 @@ UX는 다음처럼 느껴져야 한다:
 | 대상 | 토큰 | From → To | 텍스트 |
 |---|---|---|---|
 | **MobileFrame BG** | `{gradient.mixed.soft.polar-beige}` | Polar Dew `#A1D0F6` → Soft Beige `#EEDCD6` | — |
-| **User Bubble** (우측) | `{gradient.cool.ice-azure}` | Luminous Ice `#CAF7FF` → Kinetic Azure `#4065F8` | <span style="color:#FCFCFF">**Canvas #FCFCFF**</span> |
+| **Me Bubble** (우측) | `{gradient.cool.violet-azure}` | Mystic Violet `#9747FF` → Kinetic Azure `#4065F8` | <span style="color:#FCFCFF">**Canvas #FCFCFF**</span> |
 | **William Bubble** (좌측) | `{gradient.cool.azure-night}` | Kinetic Azure `#4065F8` → Phantom Night `#001C33` | <span style="color:#FCFCFF">**Canvas #FCFCFF**</span> |
-| **Maya Bubble** (좌측) | `{gradient.warm.rose-terracotta}` | Dusty Rose `#C8847D` → Terracotta Red `#B85C4F` | <span style="color:#FCFCFF">**Canvas #FCFCFF**</span> |
-| **Cody Bubble** (좌측) | `{gradient.mixed.soft.polar-rose}` | Polar Dew `#A1D0F6` → Dusty Rose `#C8847D` | <span style="color:#FCFCFF">**Canvas #FCFCFF**</span> |
+| **Maya Bubble** (좌측) | `{gradient.warm.terracotta-abyssal}` | Terracotta Red `#B85C4F` → Abyssal Red `#771B0E` | <span style="color:#FCFCFF">**Canvas #FCFCFF**</span> |
+| **Cody Bubble** (좌측) | `{gradient.mixed.strong.violet-auburn}` | Mystic Violet `#9747FF` → Auburn Flare `#8C3124` | <span style="color:#FCFCFF">**Canvas #FCFCFF**</span> |
+
+> 시인성을 위해 Phase 1 구현 중 초기 매핑(`ice-azure` / `rose-terracotta` / `polar-rose`)을 위 strong 계열로 변경했다. 인라인 `style={{ background }}`로 직접 주입한다.
 
 **Border radius** — 버블 `{rounded.lg}` 16px · MobileFrame `{rounded.frame}` 24px · 아바타 `{rounded.full}` 50%
 
@@ -395,64 +397,92 @@ PDF 업로드 시: PDF → image 변환 → resize → compressed jpeg 생성
 
 <span style="color:#4065F8">**이번 단계 목표**</span> — 3명의 멘토가 살아 있는 듯이 대화하는 *모바일 채팅 UI 프로토타입*을 완성한다. API 호출 없이 mock 시나리오로 모든 흐름을 재현한다.
 
-### 화면 구조
+### 화면 구조 도식
+
+`ChatWindow`는 풀 그라데이션 캔버스이고, 헤더와 입력창은 그 위에 떠 있는 **floating layer**다. 초기 플랜의 sticky 구조는 floating으로 변경되었다.
 
 ```mermaid
 flowchart TB
-    Desktop[Desktop Viewport] --> Frame[MobileFrame 중앙 정렬 어두운 BG]
-    Frame --> Chat[ChatWindow Polar Beige 그라데이션 BG]
-    Chat --> Header[ChatHeader 멘토 3인 아바타 + 이름]
-    Chat --> Scroll[Scrollable Message List]
-    Chat --> Input[AskAnythingInput sticky bottom]
-    Scroll --> UserBubble[User Bubble 우측 Ice Azure]
-    Scroll --> WillBubble[William Bubble 좌측 Azure Night + 아바타]
-    Scroll --> MayaBubble[Maya Bubble 좌측 Rose Terracotta + 아바타]
-    Scroll --> CodyBubble[Cody Bubble 좌측 Polar Rose + 아바타]
+    Desktop["Desktop Viewport"] --> Frame["MobileFrame · 중앙 정렬 · 외부 어두운 BG"]
+    Frame --> Chat["ChatWindow · Polar Beige 풀 그라데이션 BG"]
+    Chat --> Header["Floating Header · 영문 타이틀 + 멘토 3인 아바타"]
+    Chat --> Scroll["Scrollable Message List"]
+    Chat --> Input["Floating AskAnythingInput · refresh + send icon"]
+    Scroll --> UserBubble["Me Bubble · 우측 · Violet Azure −45°"]
+    Scroll --> WillBubble["William Bubble · 좌측 · Azure Night −45° + 아바타"]
+    Scroll --> MayaBubble["Maya Bubble · 좌측 · Terracotta Abyssal −45° + 아바타"]
+    Scroll --> CodyBubble["Cody Bubble · 좌측 · Violet Auburn −45° + 아바타"]
+    Scroll --> Typing["TypingIndicator · 활성 멘토 아바타 + 3점 애니메이션"]
 ```
 
 ### 메시지 흐름 · fake orchestrator
+
+한 질문 = 한 turn 단위 응답 시퀀스를 보장하기 위해 `ChatWindow`에 `activeTurnRef`와 `isResponding` 가드를 두었다. 진행 중 submit은 차단되고, refresh로 turn을 강제 종료할 수 있다.
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant I as AskAnythingInput
+    participant C as ChatWindow
     participant O as fakeOrchestrator
     participant S as scenarios.json
     participant L as MessageList
 
     U->>I: 쿼리 입력 + Enter
-    I->>L: 우측 User Bubble 즉시 push
-    I->>O: dispatch(query)
+    I->>C: handleSubmit(query)
+    Note over C: 진행 중이면 차단 · turnId 발급 · 입력창 disable
+    C->>L: 우측 Me Bubble 즉시 추가
+    C->>O: scheduleAgentReplies(query, turnId)
     O->>S: matchScenario(query)
     S-->>O: ordered messages[William, Maya, Cody]
     loop 각 멘토 응답
         O->>L: TypingIndicator(agent) 표시
         Note over O: setTimeout(1.2~2.5s)
-        O->>L: TypingIndicator 제거 + Bubble push
+        O->>L: TypingIndicator 제거 + Bubble 추가
     end
+    O-->>C: 마지막 응답 완료 시 isResponding=false · 입력창 enable
+    Note over C: refresh button → 진행 중 timeout 취소 + 대화 초기화
 ```
 
-### 핵심 구현 디테일
+### Harness Engineering 구현 디테일
 
-- **`fakeOrchestrator`** — 쿼리 키워드 기반 라우팅, [Mainplan.md](Mainplan.md) Fake Orchestrator 규칙을 그대로 따름:
+- **`fakeOrchestrator`** — 쿼리 키워드 기반 라우팅, Fake Orchestrator 규칙을 그대로 따름:
   - 전략 키워드 → <span style="color:#4065F8">**William 단독**</span>
   - 스토리텔링 / 감정 키워드 → <span style="color:#B85C4F">**Maya 단독**</span>
   - 리서치 / AI workflow 키워드 → <span style="color:#9747FF">**Cody 단독**</span>
   - 그 외 / 복합 → 3명 모두 (랜덤 순서 + 1.2~2.5s 간격)
-- **`MessageBubble`** — variant에 따라 그라데이션·정렬·아바타 표시 결정. 좌측 정렬일 때 아바타(40px 원형)를 버블 좌측에 고정.
+- **`ChatWindow`** — turn 단위 가드 (`activeTurnRef`, `isResponding`) 로 중복 응답 차단. `timeoutsRef`로 진행 중 setTimeout을 추적하고 refresh 시 일괄 cancel.
+- **`MessageBubble`** — variant별 그라데이션을 인라인 `style={{ background }}`로 직접 주입해 Tailwind/HMR 누락 위험 제거.
+- **`AskAnythingInput`** — Enter submit / Shift+Enter 줄바꿈. 좌측 refresh icon으로 대화 초기화, 우측 send icon으로 제출. 응답 중에는 disable.
 - **`TypingIndicator`** — 좌측 정렬 · 해당 멘토 아바타 + 3점 애니메이션 (Framer Motion). 점에 멘토 그라데이션을 그대로 적용.
-- **인트로 시퀀스** — 페이지 로드 직후 Cody의 mock 뉴스 메시지를 자동 push (`/mock/intro.json`).
-- **자동 스크롤** — 새 메시지가 push되면 리스트 하단으로 smooth scroll.
+- **Floating layer** — `ChatWindow`는 `relative`, 헤더와 입력창은 `absolute` 레이어로 배치하고 메시지 영역에 상하 패딩으로 겹침을 방지.
+- **인트로 시퀀스** — 페이지 로드 후 `/mock/intro.json`의 Cody 메시지를 자동 push.
+- **자동 스크롤** — `messages` 또는 `typingAgent` 변경 시 하단 anchor로 smooth scroll.
+
+### 구현 체크리스트
+
+| 항목 | 내용 |
+|---|---|
+| **프로젝트 초기화** | Next.js, TypeScript, Tailwind CSS, Framer Motion 기반 앱 구조 생성 |
+| **디자인 토큰** | `lib/tokens.ts`와 `app/globals.css`에 Woong Design gradient token 정의 |
+| **Mock data** | `mock/scenarios.json`, `mock/intro.json`으로 local scenario 작성 |
+| **Agent metadata** | `lib/agents.ts`에 이름, 역할, 아바타 경로, 키워드 정의 |
+| **UI primitives** | `AgentAvatar`, `MessageBubble`, `TypingIndicator` 구현 |
+| **Input** | `AskAnythingInput`에서 Enter submit, refresh, send icon 처리 |
+| **Frame** | `MobileFrame`, `ChatWindow`, `ChatHeader`로 floating layout 구성 |
+| **Orchestrator** | `fakeOrchestrator.ts`에서 키워드 라우팅 + turn 가드 + 순차 응답 |
+| **Polish** | Framer Motion 등장 애니메이션, 자동 스크롤, Cody intro sequence 적용 |
 
 ### 검증 시나리오 · Phase 1 완료 기준
 
 | # | 시나리오 | 기대 결과 |
 |---|---|---|
-| 1 | 페이지 로드 | Cody 인트로 메시지 자동 등장 (Polar Rose 버블 + Cody 아바타) |
-| 2 | `"전략적으로 어떻게 접근해야 할까?"` 입력 | 우측 Ice Azure 버블 → 1초 후 William 타이핑 → Azure Night 버블 |
-| 3 | `"스토리가 약한 것 같아요"` 입력 | Maya 단독 응답 (Rose Terracotta) |
-| 4 | `"포트폴리오 전반에 대해 피드백 주세요"` 입력 | 3명 모두 순차 응답 (랜덤 순서) |
-| 5 | 데스크탑 / 모바일 뷰포트 전환 | 데스크탑 중앙 프레임 · 모바일 풀스크린 |
+| 1 | 페이지 로드 | Cody 인트로 메시지 자동 등장 (Violet Auburn 버블 + Cody 아바타) |
+| 2 | `"전략적으로 어떻게 접근해야 할까?"` 입력 | 우측 Violet Azure 버블 → 약 1초 후 William 타이핑 → Azure Night 버블 |
+| 3 | `"스토리가 약한 것 같아요"` 입력 | Maya 단독 응답 (Terracotta Abyssal) |
+| 4 | `"포트폴리오 전반에 대해 피드백 주세요"` 입력 | 3명 모두 순차 응답 (랜덤 순서) · 한 turn 동안 중복 응답 없음 |
+| 5 | 데스크탑 / 모바일 뷰포트 전환 | 데스크탑 중앙 floating frame · 모바일 풀스크린 · 그라데이션 풀블리드 유지 |
+| 6 | refresh 버튼 클릭 | 진행 중 turn 즉시 종료 · 대화창이 Cody 인트로만 남은 상태로 초기화 |
 
 ---
 

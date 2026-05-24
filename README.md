@@ -1,90 +1,77 @@
 # Triad AI UX Mentor
 
-> A mobile-first conversational UI prototype where three AI UX mentors respond like a live group chat.
+> 세 명의 AI UX 멘토가 실제 단톡방처럼 응답하는 mobile-first 대화형 UI 프로토타입.
 
-Triad AI UX Mentor is a lightweight MVP for an AI-native UX mentoring experience. It is not designed as a generic chatbot. The goal is to make users feel like they are speaking with a small, believable team of UX mentors in real time.
+Triad AI UX Mentor는 AI-native UX 멘토링 경험을 위한 lightweight MVP다. 일반적인 챗봇이 아니라, 사용자가 작고 믿을 수 있는 UX 멘토 팀과 실시간으로 대화하고 있다고 느끼게 만드는 것이 목표다.
 
-## Core Concept
+> 이 README는 외부 방문자를 위한 **요약**이다. 실제 구현 디테일, 도식, 검증 기준, harness engineering 관점의 상세 계획은 [Mainplan.md](Mainplan.md)에 있고, 디자인 시스템 정책은 [Woongdesign.md](Woongdesign.md)에 있다.
 
-The product centers on three mentor agents:
+## 핵심 컨셉
 
-- **William** — strategic UX mentor focused on product reasoning, systems thinking, business impact, and portfolio maturity.
-- **Maya** — human-centered UX mentor focused on storytelling, emotional clarity, communication quality, and presentation flow.
-- **Cody** — UX research and AI workflow mentor focused on usability evidence, research quality, automation, and operational UX.
+제품은 세 명의 멘토 에이전트를 중심으로 작동한다.
 
-Users ask questions through a floating **Ask anything** input. Their message appears on the right, and the mentors respond on the left with avatar-supported message bubbles, staged timing, and typing indicators.
+- **William** — product reasoning, systems thinking, business impact, portfolio maturity에 집중하는 전략형 UX 멘토.
+- **Maya** — storytelling, emotional clarity, communication quality, presentation flow에 집중하는 human-centered UX 멘토.
+- **Cody** — usability evidence, research quality, automation, operational UX에 집중하는 UX research 및 AI workflow 멘토.
 
-## Screen Structure
+사용자는 플로팅 **Ask anything** 입력창에 질문을 입력한다. 사용자 메시지는 오른쪽에 나타나고, 멘토들은 왼쪽에서 프로필 이미지가 붙은 메시지 버블, staged timing, typing indicator로 응답한다.
 
-```mermaid
-flowchart TB
-    Desktop[Desktop Viewport] --> Frame[MobileFrame centered dark outer BG]
-    Frame --> Chat[ChatWindow Polar Beige gradient BG]
-    Chat --> Header[Floating Header mentor avatars + English title]
-    Chat --> Scroll[Scrollable Message List]
-    Chat --> Input[Floating AskAnythingInput bottom search bar]
-    Scroll --> UserBubble[Me Bubble right]
-    Scroll --> WillBubble[William Bubble left + avatar]
-    Scroll --> MayaBubble[Maya Bubble left + avatar]
-    Scroll --> CodyBubble[Cody Bubble left + avatar]
+## 화면 구조
+
+아래 구조는 실제 화면의 계층을 나타낸다. 바깥은 desktop viewport이고, 내부에는 mobile phone frame이 중앙에 배치된다.
+
+```text
+Desktop Viewport
+└── MobileFrame
+    ├── 외부: dark background
+    └── 내부: ChatWindow
+        ├── 전체 배경
+        │   └── Polar Beige full gradient background
+        │
+        ├── Floating Header
+        │   ├── Title
+        │   │   ├── Triad Mentor Room
+        │   │   └── Live UX Mentor Chat
+        │   └── Mentor Avatars
+        │       ├── William.png
+        │       ├── Maya.png
+        │       └── Cody.png
+        │
+        ├── Scrollable Message List
+        │   ├── User Message
+        │   │   └── Me Bubble · right aligned
+        │   ├── William Message
+        │   │   ├── William avatar
+        │   │   └── William Bubble · left aligned
+        │   ├── Maya Message
+        │   │   ├── Maya avatar
+        │   │   └── Maya Bubble · left aligned
+        │   ├── Cody Message
+        │   │   ├── Cody avatar
+        │   │   └── Cody Bubble · left aligned
+        │   └── TypingIndicator
+        │       ├── active mentor avatar
+        │       └── animated dots
+        │
+        └── Floating AskAnythingInput
+            ├── Refresh button
+            ├── Ask anything input field
+            └── Send button
 ```
 
-## Phase 1 Scope
+## 디자인 방향
 
-Phase 1 focuses on the prototype experience without a live AI API.
-
-- Mobile chat UI inside a centered phone frame on desktop
-- Full Polar Beige gradient background
-- Floating top profile/title bar
-- Floating bottom input/search bar
-- Fake multi-agent orchestration from local mock scenarios
-- Cody intro message on page load
-- Typing indicators and staged mentor responses
-- Message bubbles with Woong Design gradient tokens
-- Refresh button for resetting the chat
-
-## Design Direction
-
-The UI follows `Woongdesign.md`:
+UI는 [Woongdesign.md](Woongdesign.md) 토큰을 따른다.
 
 - **Background**: Polar Beige gradient
-- **User / Me bubble**: Mystic Violet → Kinetic Azure
+- **Me bubble**: Mystic Violet → Kinetic Azure
 - **William bubble**: Kinetic Azure → Phantom Night
 - **Maya bubble**: Terracotta Red → Abyssal Red
 - **Cody bubble**: Mystic Violet → Auburn Flare
-- **Typography**: Pretendard-based body text
+- **Typography**: Pretendard 기반 본문
 - **Visual language**: typography, color planes, whitespace, rounded surfaces
 
-## Architecture
-
-```text
-/app
-  layout.tsx
-  page.tsx
-  globals.css
-/components
-  MobileFrame.tsx
-  ChatWindow.tsx
-  ChatHeader.tsx
-  MessageBubble.tsx
-  AgentAvatar.tsx
-  TypingIndicator.tsx
-  AskAnythingInput.tsx
-/lib
-  agents.ts
-  fakeOrchestrator.ts
-  tokens.ts
-  types.ts
-/mock
-  intro.json
-  scenarios.json
-/public/agents
-  William.png
-  Maya.png
-  Cody.png
-```
-
-## Tech Stack
+## 기술 스택
 
 - **Next.js App Router**
 - **React**
@@ -92,41 +79,48 @@ The UI follows `Woongdesign.md`:
 - **Tailwind CSS**
 - **Framer Motion**
 
-## Running Locally
+## 로컬 실행
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+브라우저에서 `http://localhost:3000`을 연다.
 
-## MVP Rules
+## 코드 구조 (요약)
 
-The MVP intentionally avoids:
+```text
+/app          ← Next.js App Router entry
+/components   ← MobileFrame, ChatWindow, MessageBubble 등 UI
+/lib          ← agents, tokens, fakeOrchestrator, types
+/mock         ← intro.json, scenarios.json
+/public/agents ← William.png, Maya.png, Cody.png
+```
 
-- Real multi-agent infrastructure
-- LangGraph
-- Vector database
-- Distributed agents
-- WebSocket realtime sync
-- Advanced orchestration
+자세한 컴포넌트 책임 분담은 [Mainplan.md](Mainplan.md)의 *컴포넌트 역할 요약* 표를 참고한다.
 
-Instead, the first version uses fake multi-agent orchestration, local mock data, typing delays, and staged rendering to create a believable mentoring experience.
+## 로드맵
 
-## Roadmap
-
-| Phase | Scope |
+| Phase | 범위 |
 |---|---|
-| **Phase 1** | Mobile chat UI, fake scenarios, typing animation, intro sequence |
-| **Phase 2** | Gemini 2.5 Flash integration and `[William] / [Maya] / [Cody]` response parsing |
+| **Phase 1** | mobile chat UI, fake scenario, typing animation, intro sequence |
+| **Phase 2** | Gemini 2.5 Flash 연동 및 `[William] / [Maya] / [Cody]` response parsing |
 | **Phase 3** | Cody proactive news feed |
-| **Phase 4** | Portfolio upload, preview, and page selection |
-| **Phase 5** | Portfolio AI analysis |
-| **Phase 6** | Local memory and chat history optimization |
+| **Phase 4** | portfolio upload, preview, page selection |
+| **Phase 5** | portfolio AI analysis |
+| **Phase 6** | local memory 및 chat history optimization |
 
-## Philosophy
+각 Phase의 구체 작업 단위, 가드 로직, 검증 시나리오는 [Mainplan.md](Mainplan.md)에 있다.
 
-The priority is not technical complexity. The priority is the feeling of speaking with a real UX mentor team.
+## 더 자세한 문서
 
-Triad should feel alive, emotionally aware, practical, and strategically useful before it becomes architecturally sophisticated.
+- [Mainplan.md](Mainplan.md) — harness engineering 관점의 구현 상세, 화면 구조 도식, 메시지 흐름 도식, 구현 체크리스트, 검증 시나리오, MVP 규칙
+- [Woongdesign.md](Woongdesign.md) — 색·타이포·그라데이션 토큰 등 디자인 시스템 정책
+- [Agent md/William.md](Agent%20md/William.md) · [Agent md/Maya.md](Agent%20md/Maya.md) · [Agent md/Cody.md](Agent%20md/Cody.md) — 각 에이전트 constitution
+
+## 철학
+
+우선순위는 기술적 복잡도가 아니다. 가장 중요한 것은 실제 UX 멘토 팀과 대화하고 있다는 느낌이다.
+
+Triad는 아키텍처적으로 정교해지기 전에 먼저 살아 있고, 감정적으로 섬세하며, 실무적으로 유용하고, 전략적으로 도움이 되는 제품처럼 느껴져야 한다.

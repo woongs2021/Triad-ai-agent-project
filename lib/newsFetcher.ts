@@ -48,6 +48,15 @@ const parser = new Parser<unknown, RssItem>({
   },
 });
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string) {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    }),
+  ]);
+}
+
 function stripHtml(value: string) {
   return value
     .replace(/<[^>]*>/g, " ")
@@ -124,7 +133,7 @@ function normalizeItem(source: FeedSource, item: RssItem): NewsItem | null {
 }
 
 async function fetchSource(source: FeedSource) {
-  const feed = await parser.parseURL(source.url);
+  const feed = await withTimeout(parser.parseURL(source.url), 6000, source.name);
 
   return feed.items
     .map((item) => normalizeItem(source, item))

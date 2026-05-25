@@ -5,6 +5,7 @@ import { agents } from "@/lib/agents";
 import { gradients } from "@/lib/tokens";
 import type { AgentId, ChatMessage, MessageVariant } from "@/lib/types";
 import { AgentAvatar } from "@/components/AgentAvatar";
+import { FormattedMessageContent } from "@/components/FormattedMessageContent";
 
 type MessageBubbleProps = {
   message: ChatMessage;
@@ -48,7 +49,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             isUser ? "rounded-br-[5px]" : "rounded-bl-[5px]"
           }`}
         >
-          {message.content}
+          <FormattedMessageContent content={message.content} isUser={isUser} />
         </div>
       </div>
     </motion.div>

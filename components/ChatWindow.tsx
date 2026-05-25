@@ -3,6 +3,7 @@
 import { AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import intro from "@/mock/intro.json";
+import { useScrollActivity } from "@/hooks/useScrollActivity";
 import { agents } from "@/lib/agents";
 import { streamMentors } from "@/lib/chatClient";
 import { createMessageId, getMockReplies } from "@/lib/fakeOrchestrator";
@@ -72,6 +73,7 @@ async function fetchIntroNews(signal: AbortSignal): Promise<NewsApiResponse> {
 }
 
 export function ChatWindow() {
+  const chatScroll = useScrollActivity();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [isResponding, setIsResponding] = useState(false);
@@ -322,7 +324,12 @@ export function ChatWindow() {
         </div>
       </div>
 
-      <div className="scrollbar-hidden h-full overflow-y-auto px-4 pb-32 pt-32">
+      <div
+        onScroll={chatScroll.onScroll}
+        className={`scrollbar-dynamic h-full overflow-y-auto px-4 pb-32 pt-32 ${
+          chatScroll.isScrolling ? "is-scrolling" : ""
+        }`}
+      >
         <div className="flex min-h-full flex-col justify-end gap-4">
           <AnimatePresence initial={false}>
             {messages.map((message) =>
@@ -339,6 +346,16 @@ export function ChatWindow() {
           <div ref={scrollAnchorRef} />
         </div>
       </div>
+      {chatScroll.hasScrollableContent ? (
+        <div className="pointer-events-none absolute top-32 right-1 bottom-32 z-30 w-1">
+          <div
+            style={chatScroll.thumbStyle}
+            className={`scrollbar-overlay-thumb w-full rounded-full bg-[#001C33]/25 ${
+              chatScroll.isScrolling ? "is-scrolling" : ""
+            }`}
+          />
+        </div>
+      ) : null}
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pb-3">
         <div className="pointer-events-auto">

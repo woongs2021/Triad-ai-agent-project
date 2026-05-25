@@ -15,7 +15,7 @@ export async function* streamGemini({ system, user, signal }: StreamGeminiOption
 
   const ai = new GoogleGenAI({ apiKey });
   const stream = await ai.models.generateContentStream({
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     contents: [
       {
         role: "user",

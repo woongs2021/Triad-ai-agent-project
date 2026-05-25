@@ -398,8 +398,8 @@ PDF 업로드 시: PDF → image 변환 → resize → compressed jpeg 생성
 |---|---|---|
 | <span style="color:#4065F8">**Phase 1**</span> | mobile chat UI · fake 시나리오 응답 · 타이핑 애니메이션 · 인트로 시퀀스 | 완료 |
 | <span style="color:#9747FF">**Phase 2**</span> | Gemini 2.5 Flash 연동 · `[William]/[Maya]/[Cody]` 태그 split · 응답 스트리밍 | 완료 |
-| <span style="color:#9747FF">**Phase 3**</span> | Cody RSS daily news feed · NewsCard · same-day cache · mock fallback | <span style="color:#9747FF">**이번 단계**</span> |
-| **Phase 4** | portfolio upload · page preview · 최대 5페이지 선택 | — |
+| <span style="color:#9747FF">**Phase 3**</span> | Cody RSS daily news feed · NewsCard · same-day cache · mock fallback | 완료 |
+| <span style="color:#9747FF">**Phase 4**</span> | responsive web shell · project pages · mentor pages · Vercel deployment | <span style="color:#9747FF">**이번 단계**</span> |
 | **Phase 5** | portfolio AI analysis (William → Maya → Cody 순) | — |
 | **Phase 6** | memory persistence · chat history optimization | — |
 
@@ -613,6 +613,53 @@ sequenceDiagram
 | 4 | `GEMINI_API_KEY` 비움 | RSS 뉴스 + fallback 코멘트 표시 |
 | 5 | 카드 링크 클릭 | 원문 URL이 새 탭으로 열림 |
 | 6 | 일반 채팅 입력 | Phase 2 Gemini 멘토 응답 흐름 유지 |
+
+---
+
+## Phase 4 개발 상세
+
+<span style="color:#9747FF">**이번 단계 목표**</span> — Phase 1-3의 채팅 프로토타입을 외부 방문자가 바로 테스트할 수 있는 반응형 웹사이트로 확장한다. 데스크탑에서는 좌측에 프로젝트 설명/멘토/프로세스를 보여주고 우측에 모바일 채팅창을 고정하며, 모바일에서는 채팅을 풀스크린으로 유지하고 햄버거 메뉴로 정보를 제공한다.
+
+### Phase 4 화면 구조
+
+```mermaid
+flowchart TB
+    Header["SiteHeader · brand + desktop nav"]
+    Shell["SiteShell · responsive layout"]
+    Left["Desktop left content · route transition"]
+    Chat["Desktop right chat · rounded mobile frame"]
+    MobileChat["Mobile full-screen chat · no radius"]
+    Menu["Mobile floating hamburger + overlay"]
+
+    Header --> Shell
+    Shell --> Left
+    Shell --> Chat
+    Shell --> MobileChat
+    MobileChat --> Menu
+```
+
+### 구현 범위
+
+- **웹 셸** — `components/SiteShell.tsx`가 데스크탑 2-column과 모바일 full-screen chat을 전환한다.
+- **상단 내비게이션** — `SiteHeader`가 프로젝트명과 `Project intro`, `AI Mentors`, `AI dev process` 메뉴를 제공한다.
+- **모바일 메뉴** — `HamburgerButton`과 `MobileMenuOverlay`로 모바일에서 프로젝트 정보를 오버레이로 연다.
+- **라우트** — `/`, `/intro`, `/mentors`, `/process`를 추가하고 같은 `SiteShell` 안에서 `ChatWindow`를 유지한다.
+- **컨텐츠 카드** — `MentorCard`, `PhaseCard`로 에이전트 정보와 Phase별 계획 링크를 정리한다.
+- **애니메이션** — `RouteTransition`이 Framer Motion으로 좌측 컨텐츠/모바일 오버레이 내용을 부드럽게 전환한다.
+- **디자인** — Woong Design의 연한 warm/cool 배경, Phantom Night 텍스트, Kinetic Azure/Abyssal Red 텍스트 버튼을 사용한다.
+- **배포 준비** — Vercel 기본 Next.js 배포 구조와 `GEMINI_API_KEY` 환경변수 안내를 README에 추가한다.
+
+### 검증 시나리오 · Phase 4 완료 기준
+
+| # | 시나리오 | 기대 결과 |
+|---|---|---|
+| 1 | 데스크탑 `/` 접속 | 좌측 프로젝트 요약 + 우측 rounded 모바일 채팅창 표시 |
+| 2 | `/intro`, `/mentors`, `/process` 이동 | 좌측 컨텐츠가 부드럽게 전환되고 우측 채팅은 유지 |
+| 3 | 모바일 `/` 접속 | 채팅이 radius 없이 풀스크린으로 표시 |
+| 4 | 모바일 햄버거 클릭 | 원형 버튼 아래 정보 오버레이가 부드럽게 열림 |
+| 5 | AI Mentors | William, Maya, Cody 순서와 프로필 이미지 표시 |
+| 6 | AI dev process | Phase 1-4 카드와 각 plan 링크 표시 |
+| 7 | Vercel 배포 | `GEMINI_API_KEY` 환경변수 설정 후 `/api/news`, `/api/mentors` 정상 동작 |
 
 ---
 

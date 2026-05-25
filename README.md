@@ -93,8 +93,8 @@ npm run dev
 ## 코드 구조 (요약)
 
 ```text
-/app          ← Next.js App Router entry, API routes
-/components   ← MobileFrame, ChatWindow, MessageBubble, NewsCard 등 UI
+/app          ← Next.js App Router entry, site pages, API routes
+/components   ← SiteShell, MobileFrame, ChatWindow, MessageBubble, NewsCard 등 UI
 /lib          ← agents, tokens, router, Gemini, RSS news utilities
 /mock         ← intro.json, scenarios.json, news.json fallback
 /public/agents ← William.png, Maya.png, Cody.png
@@ -109,11 +109,20 @@ npm run dev
 | **Phase 1** | mobile chat UI, fake scenario, typing animation, intro sequence |
 | **Phase 2** | Gemini 2.5 Flash 연동 및 `[William] / [Maya] / [Cody]` response parsing |
 | **Phase 3** | Cody RSS daily news feed, NewsCard, same-day cache, mock fallback |
-| **Phase 4** | portfolio upload, preview, page selection |
+| **Phase 4** | responsive web shell, project pages, mentor pages, Vercel deployment |
 | **Phase 5** | portfolio AI analysis |
 | **Phase 6** | local memory 및 chat history optimization |
 
 각 Phase의 구체 작업 단위, 가드 로직, 검증 시나리오는 [Mainplan.md](Mainplan.md)에 있다.
+
+## 배포
+
+Vercel에 GitHub 저장소를 연결하면 기본 Next.js 설정으로 배포할 수 있다.
+
+- Build command: `next build`
+- Environment variable: `GEMINI_API_KEY`
+- `.env.local`은 로컬 전용이며 GitHub에 커밋하지 않는다.
+- `/api/news`의 same-day cache는 서버 인스턴스 메모리 기준이므로, serverless cold start 시 새로 계산될 수 있다.
 
 ## 더 자세한 문서
 

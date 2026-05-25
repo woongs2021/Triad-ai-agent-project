@@ -70,10 +70,34 @@ textarea {
   background: linear-gradient(-45deg, #9747FF 0%, #8C3124 100%);
 }
 
-.scrollbar-hidden {
+.scrollbar-dynamic {
+  scrollbar-color: transparent transparent;
   scrollbar-width: none;
 }
 
-.scrollbar-hidden::-webkit-scrollbar {
-  display: none;
+.scrollbar-dynamic::-webkit-scrollbar {
+  height: 0;
+  width: 0;
+}
+
+.scrollbar-dynamic::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-dynamic::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.scrollbar-dynamic.is-scrolling::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.scrollbar-overlay-thumb {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.scrollbar-overlay-thumb.is-scrolling {
+  opacity: 1;
 }

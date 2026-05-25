@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useScrollActivity } from "@/hooks/useScrollActivity";
 import { ChatWindow } from "@/components/ChatWindow";
 import { HamburgerButton } from "@/components/HamburgerButton";
@@ -13,8 +14,23 @@ type SiteShellProps = {
 };
 
 export function SiteShell({ children }: SiteShellProps) {
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const contentScroll = useScrollActivity();
+  const menuScroll = useScrollActivity();
+  const { refreshMetrics: refreshContentMetrics, scrollRef: contentScrollRef, onScroll: onContentScroll, isScrolling: isContentScrolling, hasScrollableContent: hasContentScroll, thumbStyle: contentThumbStyle } = contentScroll;
+  const { refreshMetrics: refreshMenuMetrics } = menuScroll;
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      refreshContentMetrics();
+      refreshMenuMetrics();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [pathname, refreshContentMetrics, refreshMenuMetrics]);
 
   return (
     <div className="h-dvh overflow-hidden bg-[#F5F1ED] text-[#001C33]">
@@ -23,21 +39,22 @@ export function SiteShell({ children }: SiteShellProps) {
       <div className="hidden h-full grid-cols-[minmax(0,1fr)_480px] gap-8 px-8 pt-24 pb-8 lg:grid xl:grid-cols-[minmax(0,1fr)_520px] xl:px-12">
         <main className="relative h-full overflow-hidden rounded-[32px] bg-canvas/45 shadow-sm shadow-[#001C33]/5">
           <div
-            onScroll={contentScroll.onScroll}
+            ref={contentScrollRef}
+            onScroll={onContentScroll}
             className={`scrollbar-dynamic h-full overflow-y-auto px-10 py-12 ${
-              contentScroll.isScrolling ? "is-scrolling" : ""
+              isContentScrolling ? "is-scrolling" : ""
             }`}
           >
             <div className="mx-auto max-w-2xl">
               <RouteTransition>{children}</RouteTransition>
             </div>
           </div>
-          {contentScroll.hasScrollableContent ? (
+          {hasContentScroll ? (
             <div className="pointer-events-none absolute top-6 right-2 bottom-6 z-10 w-1">
               <div
-                style={contentScroll.thumbStyle}
+                style={contentThumbStyle}
                 className={`scrollbar-overlay-thumb w-full rounded-full bg-[#001C33]/25 ${
-                  contentScroll.isScrolling ? "is-scrolling" : ""
+                  isContentScrolling ? "is-scrolling" : ""
                 }`}
               />
             </div>
@@ -54,7 +71,9 @@ export function SiteShell({ children }: SiteShellProps) {
       <div className="relative h-full lg:hidden">
         <ChatWindow />
         <HamburgerButton isOpen={isMenuOpen} onClick={() => setIsMenuOpen((current) => !current)} />
-        <MobileMenuOverlay isOpen={isMenuOpen}>{children}</MobileMenuOverlay>
+        <MobileMenuOverlay isOpen={isMenuOpen} menuScroll={menuScroll}>
+          {children}
+        </MobileMenuOverlay>
       </div>
     </div>
   );

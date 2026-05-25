@@ -3,18 +3,18 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useScrollActivity } from "@/hooks/useScrollActivity";
+import type { useScrollActivity } from "@/hooks/useScrollActivity";
 import { navItems } from "@/lib/siteContent";
 import { RouteTransition } from "@/components/RouteTransition";
 
 type MobileMenuOverlayProps = {
   isOpen: boolean;
+  menuScroll: ReturnType<typeof useScrollActivity>;
   children: React.ReactNode;
 };
 
-export function MobileMenuOverlay({ isOpen, children }: MobileMenuOverlayProps) {
+export function MobileMenuOverlay({ isOpen, menuScroll, children }: MobileMenuOverlayProps) {
   const pathname = usePathname();
-  const menuScroll = useScrollActivity();
 
   return (
     <AnimatePresence>
@@ -28,6 +28,7 @@ export function MobileMenuOverlay({ isOpen, children }: MobileMenuOverlayProps) 
           className="fixed inset-0 z-40 overflow-hidden bg-[#F5F1ED]/95 text-[#001C33] backdrop-blur-xl lg:hidden"
         >
           <div
+            ref={menuScroll.scrollRef}
             onScroll={menuScroll.onScroll}
             className={`scrollbar-dynamic h-full overflow-y-auto px-5 pt-36 pb-10 ${
               menuScroll.isScrolling ? "is-scrolling" : ""

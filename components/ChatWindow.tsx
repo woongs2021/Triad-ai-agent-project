@@ -74,6 +74,8 @@ async function fetchIntroNews(signal: AbortSignal): Promise<NewsApiResponse> {
 
 export function ChatWindow() {
   const chatScroll = useScrollActivity();
+  const { refreshMetrics, scrollRef, onScroll, isScrolling, hasScrollableContent, thumbStyle } =
+    chatScroll;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typingAgent, setTypingAgent] = useState<AgentId | null>(null);
   const [isResponding, setIsResponding] = useState(false);
@@ -97,7 +99,15 @@ export function ChatWindow() {
 
   useEffect(() => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, typingAgent]);
+
+    const frame = window.requestAnimationFrame(() => {
+      refreshMetrics();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [messages, typingAgent, refreshMetrics]);
 
   useEffect(() => {
     return () => {
@@ -325,9 +335,10 @@ export function ChatWindow() {
       </div>
 
       <div
-        onScroll={chatScroll.onScroll}
+        ref={scrollRef}
+        onScroll={onScroll}
         className={`scrollbar-dynamic h-full overflow-y-auto px-4 pb-32 pt-32 ${
-          chatScroll.isScrolling ? "is-scrolling" : ""
+          isScrolling ? "is-scrolling" : ""
         }`}
       >
         <div className="flex min-h-full flex-col justify-end gap-4">
@@ -346,12 +357,12 @@ export function ChatWindow() {
           <div ref={scrollAnchorRef} />
         </div>
       </div>
-      {chatScroll.hasScrollableContent ? (
+      {hasScrollableContent ? (
         <div className="pointer-events-none absolute top-32 right-1 bottom-32 z-30 w-1">
           <div
-            style={chatScroll.thumbStyle}
+            style={thumbStyle}
             className={`scrollbar-overlay-thumb w-full rounded-full bg-[#001C33]/25 ${
-              chatScroll.isScrolling ? "is-scrolling" : ""
+              isScrolling ? "is-scrolling" : ""
             }`}
           />
         </div>

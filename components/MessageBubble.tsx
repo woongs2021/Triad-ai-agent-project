@@ -12,6 +12,7 @@ type MessageBubbleProps = {
 
 const bubbleGradients: Record<MessageVariant, string> = {
   user: gradients.violetAzure,
+  news: gradients.violetAuburn,
   william: gradients.azureNight,
   maya: gradients.terracottaAbyssal,
   cody: gradients.violetAuburn,
@@ -19,7 +20,7 @@ const bubbleGradients: Record<MessageVariant, string> = {
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.variant === "user";
-  const agentId = isUser ? null : (message.variant as AgentId);
+  const agentId = isUser || message.variant === "news" ? null : (message.variant as AgentId);
   const agent = agentId ? agents[agentId] : null;
 
   return (

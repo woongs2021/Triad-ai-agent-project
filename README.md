@@ -78,6 +78,8 @@ UI는 [Woongdesign.md](Woongdesign.md) 토큰을 따른다.
 - **TypeScript**
 - **Tailwind CSS**
 - **Framer Motion**
+- **Gemini 2.5 Flash**
+- **RSS Parser**
 
 ## 로컬 실행
 
@@ -91,10 +93,10 @@ npm run dev
 ## 코드 구조 (요약)
 
 ```text
-/app          ← Next.js App Router entry
-/components   ← MobileFrame, ChatWindow, MessageBubble 등 UI
-/lib          ← agents, tokens, fakeOrchestrator, types
-/mock         ← intro.json, scenarios.json
+/app          ← Next.js App Router entry, API routes
+/components   ← MobileFrame, ChatWindow, MessageBubble, NewsCard 등 UI
+/lib          ← agents, tokens, router, Gemini, RSS news utilities
+/mock         ← intro.json, scenarios.json, news.json fallback
 /public/agents ← William.png, Maya.png, Cody.png
 ```
 
@@ -106,7 +108,7 @@ npm run dev
 |---|---|
 | **Phase 1** | mobile chat UI, fake scenario, typing animation, intro sequence |
 | **Phase 2** | Gemini 2.5 Flash 연동 및 `[William] / [Maya] / [Cody]` response parsing |
-| **Phase 3** | Cody proactive news feed |
+| **Phase 3** | Cody RSS daily news feed, NewsCard, same-day cache, mock fallback |
 | **Phase 4** | portfolio upload, preview, page selection |
 | **Phase 5** | portfolio AI analysis |
 | **Phase 6** | local memory 및 chat history optimization |

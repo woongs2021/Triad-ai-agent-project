@@ -209,6 +209,7 @@ Gemini API는 **1번만** 호출한다.
 | 스타일 | TailwindCSS |
 | 애니메이션 | Framer Motion |
 | AI | <span style="color:#9747FF">**Gemini 2.5 Flash API**</span> |
+| 뉴스 | RSS feed + same-day server cache |
 | 배포 | Vercel |
 
 ---
@@ -218,6 +219,9 @@ Gemini API는 **1번만** 호출한다.
 ```
 /app
   layout.tsx · page.tsx · globals.css
+  /api
+    mentors/route.ts ← Phase 2 Gemini mentor SSE
+    news/route.ts    ← Phase 3 Cody daily news
 /components
   MobileFrame.tsx
   ChatWindow.tsx
@@ -231,7 +235,12 @@ Gemini API는 **1번만** 호출한다.
 /lib
   agents.ts           ← 에이전트 메타데이터 (이름, 그라데이션, 아바타 경로, 키워드)
   tokens.ts           ← 그라데이션 토큰 상수 (Woong Design 미러)
-  fakeOrchestrator.ts ← 시나리오 매칭 + 순차 dispatch
+  router.ts           ← Phase 2 하이브리드 멘토 라우팅
+  gemini.ts           ← Gemini streaming utility
+  newsFetcher.ts      ← Phase 3 RSS 수집 + 정규화
+  newsCache.ts        ← Phase 3 same-day server cache
+  newsPrompts.ts      ← Cody 뉴스 코멘트 프롬프트
+  fakeOrchestrator.ts ← mock fallback 응답
   types.ts            ← Message · Agent · Variant 타입
 /agents
   william.md · maya.md · cody.md  ← Agent Constitution (compressed)
@@ -253,6 +262,7 @@ Gemini API는 **1번만** 호출한다.
 | **`ChatWindow`** | Polar Beige 그라데이션 BG · 스크롤 메시지 리스트 컨테이너 |
 | **`ChatHeader`** | 상단 고정 · 멘토 3인 아바타 + 이름 + 상태 |
 | **`MessageBubble`** | `variant: 'user' \| 'william' \| 'maya' \| 'cody'` 별 그라데이션·정렬·아바타 표시 |
+| **`NewsCard`** | Phase 3 Cody daily news 카드 · 카테고리/소스/제목/요약/링크 표시 |
 | **`AgentAvatar`** | 40px 원형 · `/public/agents/*.png` 로드 |
 | **`TypingIndicator`** | 좌측 정렬 · 해당 멘토 아바타 + 3점 애니메이션 |
 | **`AskAnythingInput`** | 하단 sticky · Canvas BG + 1px hairline · Enter submit · Shift+Enter 줄바꿈 |
@@ -294,8 +304,10 @@ Gemini API는 **1번만** 호출한다.
 
 앱 로드 시 Cody가 proactive하게 뉴스 하나를 공유한다.
 
-- 초기에는 **mocked local JSON** 사용
-- <span style="color:#FF105C">real crawling 구현 금지</span>
+- Phase 3에서는 **RSS feed 기반 실제 뉴스**를 사용한다.
+- 같은 날에는 서버 메모리에 캐시한 첫 결과를 재사용해 refresh해도 같은 뉴스/코멘트를 보여준다.
+- RSS 수집 또는 Gemini 코멘트 생성 실패 시 `/mock/news.json`으로 fallback한다.
+- <span style="color:#FF105C">풀텍스트 스크래핑·크롤링 구현 금지</span> — RSS가 제공하는 제목/요약/링크만 사용한다.
 
 **예시 구조:** `/mock/news.json`
 
@@ -384,9 +396,9 @@ PDF 업로드 시: PDF → image 변환 → resize → compressed jpeg 생성
 
 | Phase | 범위 | 상태 |
 |---|---|---|
-| <span style="color:#4065F8">**Phase 1**</span> | mobile chat UI · fake 시나리오 응답 · 타이핑 애니메이션 · 인트로 시퀀스 | <span style="color:#4065F8">**이번 단계**</span> |
-| **Phase 2** | Gemini 2.5 Flash 연동 · `[William]/[Maya]/[Cody]` 태그 split · 응답 스트리밍 | 다음 단계 |
-| **Phase 3** | Cody proactive news feed (mock JSON 기반) | — |
+| <span style="color:#4065F8">**Phase 1**</span> | mobile chat UI · fake 시나리오 응답 · 타이핑 애니메이션 · 인트로 시퀀스 | 완료 |
+| <span style="color:#9747FF">**Phase 2**</span> | Gemini 2.5 Flash 연동 · `[William]/[Maya]/[Cody]` 태그 split · 응답 스트리밍 | 완료 |
+| <span style="color:#9747FF">**Phase 3**</span> | Cody RSS daily news feed · NewsCard · same-day cache · mock fallback | <span style="color:#9747FF">**이번 단계**</span> |
 | **Phase 4** | portfolio upload · page preview · 최대 5페이지 선택 | — |
 | **Phase 5** | portfolio AI analysis (William → Maya → Cody 순) | — |
 | **Phase 6** | memory persistence · chat history optimization | — |
@@ -483,6 +495,124 @@ sequenceDiagram
 | 4 | `"포트폴리오 전반에 대해 피드백 주세요"` 입력 | 3명 모두 순차 응답 (랜덤 순서) · 한 turn 동안 중복 응답 없음 |
 | 5 | 데스크탑 / 모바일 뷰포트 전환 | 데스크탑 중앙 floating frame · 모바일 풀스크린 · 그라데이션 풀블리드 유지 |
 | 6 | refresh 버튼 클릭 | 진행 중 turn 즉시 종료 · 대화창이 Cody 인트로만 남은 상태로 초기화 |
+
+---
+
+## Phase 2 개발 상세
+
+<span style="color:#9747FF">**이번 단계 목표**</span> — Phase 1의 believable chat harness를 유지하면서, 답변 생성만 Gemini 2.5 Flash로 교체한다. UX는 여전히 메시지 단위 fake realtime이며, 복잡한 multi-agent infrastructure는 만들지 않는다.
+
+### Phase 2 시스템 흐름
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as ChatWindow
+    participant A as API Route
+    participant R as Router
+    participant G as Gemini
+    participant P as TagParser
+
+    U->>C: Ask anything 입력
+    C->>A: POST /api/mentors
+    A->>R: routeQuery(query)
+    alt 단독 키워드 매칭
+        R-->>A: single agent
+        A-->>C: start(agent)
+        A->>G: single mentor prompt
+        G-->>A: stream chunks
+        A-->>C: message(agent, content)
+    else 복합 또는 매칭 실패
+        R-->>A: auto
+        A->>G: multi mentor prompt
+        G-->>A: tagged stream
+        A->>P: [William]/[Maya]/[Cody] split
+        A-->>C: mentor별 start/message
+    end
+    A-->>C: done
+```
+
+### 구현 범위
+
+- **Gemini SDK** — `@google/genai` + `gemini-2.5-flash` 사용. 서버 전용 `GEMINI_API_KEY`만 참조한다.
+- **하이브리드 라우팅** — `lib/router.ts`에서 단독 키워드 매칭은 William/Maya/Cody 중 1인으로 보내고, 복합/매칭 실패는 Gemini가 태그로 멘토를 선택한다.
+- **프롬프트 압축본** — `lib/prompts.ts`에 각 멘토 constitution의 핵심만 system prompt로 주입한다.
+- **태그 파싱** — `lib/tagParser.ts`가 `[William]`, `[Maya]`, `[Cody]` 블록을 `ScenarioReply[]`로 변환한다.
+- **SSE Route Handler** — `app/api/mentors/route.ts`에서 `start`, `message`, `error`, `done` 이벤트를 보낸다.
+- **클라이언트 스트림** — `lib/chatClient.ts`가 SSE를 파싱하고 `ChatWindow`가 typing indicator와 메시지 버블을 갱신한다.
+- **Fallback** — API 키 미설정, 네트워크 오류, Gemini 실패 시 Phase 1 mock 응답으로 자연스럽게 복귀한다.
+
+### 검증 시나리오 · Phase 2 완료 기준
+
+| # | 시나리오 | 기대 결과 |
+|---|---|---|
+| 1 | `GEMINI_API_KEY` 설정 후 전략 질문 입력 | William typing → Gemini 기반 William 버블 1개 |
+| 2 | storytelling 질문 입력 | Maya typing → Gemini 기반 Maya 버블 1개 |
+| 3 | `포트폴리오 전반 피드백` 입력 | Gemini가 필요한 멘토를 `[William]`, `[Maya]`, `[Cody]` 태그로 나누고 버블 순차 출력 |
+| 4 | 매칭 실패 질문 입력 | auto route로 Gemini가 적절한 멘토를 선택 |
+| 5 | 응답 중 refresh | 진행 중 fetch abort · 대화창은 Cody 인트로만 남음 |
+| 6 | `GEMINI_API_KEY` 비움 | mock fallback 응답이 Phase 1처럼 재생 |
+
+---
+
+## Phase 3 개발 상세
+
+<span style="color:#9747FF">**이번 단계 목표**</span> — 앱 로드 시 Cody가 실제 RSS에서 가져온 UX/AI 뉴스 1건을 짧은 코멘트와 함께 공유한다. 같은 날에는 첫 결과를 서버 메모리에 캐시해, refresh해도 동일한 뉴스와 코멘트를 토큰 추가 사용 없이 보여준다.
+
+### Phase 3 시스템 흐름
+
+```mermaid
+sequenceDiagram
+    participant C as ChatWindow
+    participant N as News API
+    participant Cache as NewsCache
+    participant RSS as RSS Sources
+    participant G as Gemini
+    participant M as MockNews
+
+    C->>N: GET /api/news
+    N->>Cache: read dayKey
+    alt cache hit
+        Cache-->>N: cached payload
+    else cache miss
+        N->>RSS: collect feeds
+        alt rss ok
+            RSS-->>N: NewsItem
+        else rss fail
+            N->>M: fallback NewsItem
+        end
+        N->>G: Cody comment
+        alt comment ok
+            G-->>N: comment
+        else comment fail
+            N-->>N: fallbackComment
+        end
+        N->>Cache: write day payload
+    end
+    N-->>C: news + comment
+    C-->>C: Cody bubble + NewsCard
+```
+
+### 구현 범위
+
+- **RSS 수집** — `rss-parser`로 UX Collective, Smashing Magazine, Nielsen Norman Group, Google Research Blog RSS를 병렬 수집한다.
+- **일자 캐시** — `lib/newsCache.ts`가 KST 기준 `YYYY-MM-DD` day key로 같은 날 동일 payload를 재사용한다.
+- **뉴스 정규화** — `lib/newsFetcher.ts`가 RSS item을 `NewsItem`으로 변환하고 최신 후보 중 day key 기반 deterministic pick을 수행한다.
+- **Cody 코멘트** — `lib/newsPrompts.ts`와 `lib/gemini.ts`를 사용해 Cody 톤의 2~3문장 코멘트를 생성한다.
+- **Fallback** — RSS 실패 시 `mock/news.json`, Gemini 실패/키 없음 시 `fallbackComment`를 사용한다.
+- **NewsCard** — `components/NewsCard.tsx`가 카테고리, 소스, 제목, 요약, 원문 링크를 표시한다.
+- **인트로 시퀀스** — `ChatWindow`가 mount/reset 시 `/api/news`를 호출하고 Cody 코멘트 버블 → NewsCard 순서로 보여준다.
+
+### 검증 시나리오 · Phase 3 완료 기준
+
+| # | 시나리오 | 기대 결과 |
+|---|---|---|
+| 1 | 앱 로드 | Cody typing 후 코멘트 버블과 NewsCard 등장 |
+| 2 | 같은 날 refresh | 같은 뉴스와 코멘트가 재사용됨 |
+| 3 | RSS 실패 | `mock/news.json` 기반 fallback NewsCard 표시 |
+| 4 | `GEMINI_API_KEY` 비움 | RSS 뉴스 + fallback 코멘트 표시 |
+| 5 | 카드 링크 클릭 | 원문 URL이 새 탭으로 열림 |
+| 6 | 일반 채팅 입력 | Phase 2 Gemini 멘토 응답 흐름 유지 |
 
 ---
 

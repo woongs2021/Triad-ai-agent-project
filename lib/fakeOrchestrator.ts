@@ -11,7 +11,7 @@ function shuffleReplies(replies: ScenarioReply[]) {
   return [...replies].sort(() => Math.random() - 0.5);
 }
 
-export function getScenarioReplies(query: string): ScenarioReply[] {
+export function getMockReplies(query: string): ScenarioReply[] {
   const normalizedQuery = normalizeQuery(query);
 
   const matchedScenario = scenarioList.find((scenario) => {
